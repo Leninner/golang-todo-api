@@ -23,7 +23,7 @@ type DatabaseConfig struct {
 	Password string
 }
 
-func loadConfig() DatabaseConfig {
+func LoadConfig() DatabaseConfig {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error cargando el archivo .env: %v", err)
 	}
@@ -42,8 +42,8 @@ func BuildDatabaseString(config DatabaseConfig) string {
 		config.Host, config.Port, config.User, config.Dbname, config.Password)
 }
 
-func GetDatabaseConnection() {
-	config := loadConfig()
+func GetConnection() {
+	config := LoadConfig()
 	databaseString := BuildDatabaseString(config)
 
 	var err error
@@ -55,7 +55,7 @@ func GetDatabaseConnection() {
 	log.Println("Database connected")
 }
 
-func MigrateModels() error {
+func SetupModels() error {
 	err := DB.AutoMigrate(&tasks.Task{}, &users.User{})
 
 	if err != nil {

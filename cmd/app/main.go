@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-	database.GetDatabaseConnection()
-	err := database.MigrateModels()
+	database.GetConnection()
+	err := database.SetupModels()
 
 	if err != nil {
 		log.Fatalf("Error migrating models: %v", err)
@@ -24,11 +24,13 @@ func main() {
 func StartServer() {
 	var router = mux.NewRouter()
 
-	router.Use(utils.LogRequestMiddleware, utils.HandleExceptionMiddleware)
+	SetupMiddlewares(router)
+	tasks.SetupRoutes(router)
 
-	router.HandleFunc("/tasks", tasks.GetTasksHandler).Methods("GET")
-	router.HandleFunc("/tasks/{id}", tasks.GetTaskHandler).Methods("GET")
-
-	log.Println("Server started on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", router), "Server failed")
+	log.Println("Server started on port 8080")
+}
+
+func SetupMiddlewares(router *mux.Router) {
+	router.Use(utils.LogRequestMiddleware, utils.HandleExceptionMiddleware)
 }

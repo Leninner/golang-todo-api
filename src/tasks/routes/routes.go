@@ -6,7 +6,16 @@ import (
 	"todo-api/src/core/database"
 	"todo-api/src/core/utils"
 	"todo-api/src/tasks"
+
+	"github.com/gorilla/mux"
 )
+
+func SetupRoutes(router *mux.Router) {
+	router.HandleFunc("/tasks", GetTasksHandler).Methods("GET")
+	router.HandleFunc("/tasks", CreateTaskHandler).Methods("POST")
+	router.HandleFunc("/tasks/{id}", GetTaskHandler).Methods("GET")
+	router.HandleFunc("/tasks/{id}", DeleteUserHandler).Methods("DELETE")
+}
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 	tasks := []tasks.Task{}
