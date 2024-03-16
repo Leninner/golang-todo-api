@@ -1,0 +1,18 @@
+version: '3.1'
+
+services:
+  db:
+    container_name: tasks-db
+    image: postgres:16.2
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tasks}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tasks}
+      POSTGRES_DB: ${POSTGRES_DB:-tasks}
+    ports:
+      - 5432:5432
+    volumes:
+      - tasks-db-data:/var/lib/postgresql/data
+
+volumes:
+  tasks-db-data:
