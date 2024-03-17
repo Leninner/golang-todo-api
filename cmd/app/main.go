@@ -27,10 +27,10 @@ func StartServer() {
 	SetupMiddlewares(router)
 	tasks.SetupRoutes(router)
 
-	log.Fatal(http.ListenAndServe(":8080", router), "Server failed")
 	log.Println("Server started on port 8080")
+	log.Fatal(http.ListenAndServe(":8080", router), "Server failed")
 }
 
 func SetupMiddlewares(router *mux.Router) {
-	router.Use(utils.LogRequestMiddleware, utils.HandleExceptionMiddleware)
+	router.Use(utils.LogRequestMiddleware, utils.HandleExceptionMiddleware, utils.ApplicationJSONMiddleware)
 }

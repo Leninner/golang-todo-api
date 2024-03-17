@@ -25,16 +25,40 @@ func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(utils.NewResponseMessage("Get task", nil))
+	task := tasks.Task{}
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	database.DB.Limit(1).Find(&task, "id = ?", id)
+
+	if task.ID == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Task not found", nil))
+		return
+	}
+
+	json.NewEncoder(w).Encode(utils.NewResponseMessage("Task retreived", task))
 }
 
 func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	var task tasks.Task
-	json.NewDecoder(r.Body).Decode(&task)
 
-	createdTask := database.DB.Create(&task)
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Invalid request", nil))
+		return
+	}
 
-	if createdTask.Error != nil {
+	errors := task.Validate()
+
+	if errors != nil {
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error creating task", errors))
+		return
+	}
+
+	hasCreatedTask := database.DB.Create(&task)
+
+	if hasCreatedTask.Error != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error creating task", nil))
 	}

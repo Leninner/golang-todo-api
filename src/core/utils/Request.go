@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 )
@@ -16,6 +17,13 @@ func NewResponseMessage(message string, data interface{}) ResponseMessage {
 		Message: message,
 		Data:    data,
 	}
+}
+
+func ApplicationJSONMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func HandleExceptionMiddleware(next http.Handler) http.Handler {
@@ -33,7 +41,16 @@ func HandleExceptionMiddleware(next http.Handler) http.Handler {
 
 func LogRequestMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[%s] %s %s", r.Method, r.RequestURI, r.RemoteAddr)
+		pr, pw := io.Pipe()
+		tee := io.TeeReader(r.Body, pw)
+		r.Body = pr
+
+		go func() {
+			body, _ := io.ReadAll(tee)
+			defer pw.Close()
+			log.Printf("[%s] %s %s %s", r.Method, r.RequestURI, r.RemoteAddr, string(body))
+		}()
+
 		next.ServeHTTP(w, r)
 	})
 }
