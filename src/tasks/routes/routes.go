@@ -14,7 +14,8 @@ func SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/tasks", GetTasksHandler).Methods("GET")
 	router.HandleFunc("/tasks", CreateTaskHandler).Methods("POST")
 	router.HandleFunc("/tasks/{id}", GetTaskHandler).Methods("GET")
-	router.HandleFunc("/tasks/{id}", DeleteUserHandler).Methods("DELETE")
+	router.HandleFunc("/tasks/{id}", DeleteTaskHandler).Methods("DELETE")
+	router.HandleFunc("/tasks/{id}", UpdateTaskHandler).Methods("PUT")
 }
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,16 +50,12 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errors := utils.ValidateStruct(task)
-
-	if errors != nil {
+	if errors := utils.ValidateStruct(task); errors != nil {
 		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error creating task", errors))
 		return
 	}
 
-	hasCreatedTask := database.DB.Create(&task)
-
-	if hasCreatedTask.Error != nil {
+	if hasCreatedTask := database.DB.Create(&task); hasCreatedTask.Error != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error creating task", nil))
 	}
@@ -66,6 +63,59 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(utils.NewResponseMessage("Task created", &task))
 }
 
-func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Delete user"))
+func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	task := tasks.Task{}
+
+	database.DB.Limit(1).Find(&task, "id = ?", id)
+
+	if task.ID == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Task not found", nil))
+		return
+	}
+
+	if hasBeenDeleted := database.DB.Delete(&task); hasBeenDeleted.Error != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error deleting task", nil))
+		return
+	}
+
+	json.NewEncoder(w).Encode(utils.NewResponseMessage("Task deleted", nil))
+}
+
+func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	task := tasks.Task{}
+
+	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Invalid request", nil))
+		return
+	}
+
+	if errors := utils.ValidateStruct(task); errors != nil {
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error updating task", errors))
+		return
+	}
+
+	database.DB.Limit(1).Select("id", "created_at", "updated_at", "deleted_at").Find(&task, "id = ?", id)
+
+	if task.ID == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Task not found", nil))
+		return
+	}
+
+	if hasBeenUpdated := database.DB.Save(&task); hasBeenUpdated.Error != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error updating task", nil))
+		return
+	}
+
+	json.NewEncoder(w).Encode(utils.NewResponseMessage("Task updated", &task))
 }
