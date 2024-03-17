@@ -14,6 +14,12 @@ type ResponseMessage struct {
 	Data    interface{} `json:"data"`
 }
 
+type ErrorResponse struct {
+	FailedField string `json:"failedField"`
+	Tag         string `json:"tag"`
+	Value       string `json:"value"`
+}
+
 func NewResponseMessage(message string, data interface{}) ResponseMessage {
 	return ResponseMessage{
 		Message: message,
