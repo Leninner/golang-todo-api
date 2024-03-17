@@ -1,4 +1,7 @@
-.PHONY: up
+.PHONY: install_deps up_db
 
-up:
+install_deps:
+	go mod tidy
+
+up_db:
 	docker compose up -d
