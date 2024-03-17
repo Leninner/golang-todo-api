@@ -19,16 +19,26 @@ func SetupRoutes(router *mux.Router) {
 }
 
 func GetTasksHandler(w http.ResponseWriter, r *http.Request) {
+	queries := r.URL.Query()
+	orderBy := queries.Get("orderBy")
+	sort := queries.Get("sort")
+
 	tasks := []tasks.Task{}
-	database.DB.Find(&tasks)
-	response := utils.NewResponseMessage("Tasks retrieved", tasks)
-	json.NewEncoder(w).Encode(response)
+	database.DB.Order(orderBy + " " + sort).Find(&tasks)
+
+	json.NewEncoder(w).Encode(utils.NewResponseMessage("Tasks retrieved", tasks))
 }
 
 func GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	task := tasks.Task{}
 	vars := mux.Vars(r)
 	id := vars["id"]
+
+	if !utils.IsInteger(id) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Invalid task id", nil))
+		return
+	}
 
 	database.DB.Limit(1).Find(&task, "id = ?", id)
 
@@ -67,6 +77,12 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
+	if !utils.IsInteger(id) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Invalid task id", nil))
+		return
+	}
+
 	task := tasks.Task{}
 
 	database.DB.Limit(1).Find(&task, "id = ?", id)
@@ -89,6 +105,12 @@ func DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+
+	if !utils.IsInteger(id) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(utils.NewResponseMessage("Invalid task id", nil))
+		return
+	}
 
 	task := tasks.Task{}
 
