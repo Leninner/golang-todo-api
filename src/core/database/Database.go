@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"todo-api/src/tasks"
+	"todo-api/src/users"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -58,7 +59,7 @@ func GetConnection() {
 }
 
 func SetupModels() error {
-	err := DB.AutoMigrate(&tasks.Task{})
+	err := DB.AutoMigrate(&tasks.Task{}, &users.User{})
 
 	if err != nil {
 		return errors.New("error migrating models")
