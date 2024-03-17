@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type ResponseMessage struct {
@@ -47,10 +49,31 @@ func LogRequestMiddleware(next http.Handler) http.Handler {
 
 		go func() {
 			body, _ := io.ReadAll(tee)
-			defer pw.Close()
 			log.Printf("[%s] %s %s %s", r.Method, r.RequestURI, r.RemoteAddr, string(body))
 		}()
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func ValidateStruct(s interface{}) []*ErrorResponse {
+
+	var errors []*ErrorResponse
+	validate := validator.New()
+
+	err := validate.Struct(s)
+
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			error := &ErrorResponse{
+				FailedField: err.StructNamespace(),
+				Tag:         err.Tag(),
+				Value:       err.Param(),
+			}
+
+			errors = append(errors, error)
+		}
+	}
+
+	return errors
 }

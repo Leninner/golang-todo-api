@@ -49,7 +49,7 @@ func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errors := task.Validate()
+	errors := utils.ValidateStruct(task)
 
 	if errors != nil {
 		json.NewEncoder(w).Encode(utils.NewResponseMessage("Error creating task", errors))
